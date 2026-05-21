@@ -1,31 +1,40 @@
 package com.attus.processojudicial.application.service;
 
+import com.attus.processojudicial.api.exception.ErroDeIntegracaoException;
+import com.attus.processojudicial.api.exception.RecursoNaoEncontradoException;
+import com.attus.processojudicial.api.exception.RegraDeNegocioException;
 import com.attus.processojudicial.application.dto.*;
-import com.attus.processojudicial.domain.entity.*;
+import com.attus.processojudicial.domain.entity.Movimentacao;
+import com.attus.processojudicial.domain.entity.Parte;
+import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.enums.StatusProcesso;
-import com.attus.processojudicial.domain.repository.*;
+import com.attus.processojudicial.domain.repository.MovimentacaoRepository;
+import com.attus.processojudicial.domain.repository.ParteRepository;
+import com.attus.processojudicial.domain.repository.ProcessoRepository;
 import com.attus.processojudicial.infrastructure.client.ViaCepClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProcessoService {
+public class ProcessoService implements ProcessoServiceI {
 
     private final ProcessoRepository processoRepository;
     private final ParteRepository parteRepository;
     private final MovimentacaoRepository movimentacaoRepository;
     private final ViaCepClient viaCepClient;
 
+    @Override
     @Transactional
     public ProcessoResponseDTO criar(ProcessoRequestDTO dto) {
         log.info("Criando processo com número: {}", dto.getNumero());
         if (processoRepository.existsByNumero(dto.getNumero())) {
-            throw new IllegalArgumentException("Já existe um processo com o número: " + dto.getNumero());
+            throw new RegraDeNegocioException("Já existe um processo com o número: " + dto.getNumero());
         }
         Processo processo = Processo.builder()
                 .numero(dto.getNumero())
@@ -39,6 +48,7 @@ public class ProcessoService {
         return toResponseDTO(processo);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Page<ProcessoResponseDTO> listar(StatusProcesso status, Pageable pageable) {
         Page<Processo> page = status != null
@@ -47,36 +57,40 @@ public class ProcessoService {
         return page.map(this::toResponseDTO);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public ProcessoResponseDTO buscarPorId(Long id) {
         Processo processo = processoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Processo não encontrado: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
         return toResponseDTO(processo);
     }
 
+    @Override
     @Transactional
     public ProcessoResponseDTO atualizar(Long id, ProcessoRequestDTO dto) {
         Processo processo = processoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Processo não encontrado: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
         processo.setAssunto(dto.getAssunto());
         processo.setVara(dto.getVara());
         processo.setDataAbertura(dto.getDataAbertura());
         return toResponseDTO(processoRepository.save(processo));
     }
 
+    @Override
     @Transactional
     public ProcessoResponseDTO atualizarStatus(Long id, StatusProcesso status) {
         log.info("Atualizando status do processo {} para {}", id, status);
         Processo processo = processoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Processo não encontrado: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
         processo.setStatus(status);
         return toResponseDTO(processoRepository.save(processo));
     }
 
+    @Override
     @Transactional
     public ParteResponseDTO adicionarParte(Long processoId, ParteRequestDTO dto) {
         Processo processo = processoRepository.findById(processoId)
-                .orElseThrow(() -> new RuntimeException("Processo não encontrado: " + processoId));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + processoId));
 
         Parte parte = Parte.builder()
                 .processo(processo)
@@ -95,18 +109,21 @@ public class ProcessoService {
                 parte.setCidade(endereco.getLocalidade());
                 parte.setUf(endereco.getUf());
                 log.info("Endereço encontrado: {} - {}", endereco.getLogradouro(), endereco.getLocalidade());
+            } catch (ErroDeIntegracaoException e) {
+                throw e;
             } catch (Exception e) {
-                log.warn("Falha ao buscar CEP {}: {}", dto.getCep(), e.getMessage());
+                log.warn("Falha ao buscar CEP {} - continuando sem endereço: {}", dto.getCep(), e.getMessage());
             }
         }
 
         return toParteResponseDTO(parteRepository.save(parte));
     }
 
+    @Override
     @Transactional
     public MovimentacaoResponseDTO adicionarMovimentacao(Long processoId, MovimentacaoRequestDTO dto) {
         Processo processo = processoRepository.findById(processoId)
-                .orElseThrow(() -> new RuntimeException("Processo não encontrado: " + processoId));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + processoId));
         Movimentacao mov = Movimentacao.builder()
                 .processo(processo)
                 .descricao(dto.getDescricao())
@@ -125,8 +142,10 @@ public class ProcessoService {
         dto.setDataAbertura(p.getDataAbertura());
         dto.setCriadoEm(p.getCriadoEm());
         dto.setAtualizadoEm(p.getAtualizadoEm());
-        dto.setPartes(parteRepository.findByProcessoId(p.getId()).stream().map(this::toParteResponseDTO).toList());
-        dto.setMovimentacoes(movimentacaoRepository.findByProcessoIdOrderByDataMovimentacaoDesc(p.getId()).stream().map(this::toMovimentacaoResponseDTO).toList());
+        dto.setPartes(parteRepository.findByProcessoId(p.getId()).stream()
+                .map(this::toParteResponseDTO).toList());
+        dto.setMovimentacoes(movimentacaoRepository.findByProcessoIdOrderByDataMovimentacaoDesc(p.getId()).stream()
+                .map(this::toMovimentacaoResponseDTO).toList());
         return dto;
     }
 
