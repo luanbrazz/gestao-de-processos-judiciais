@@ -1,17 +1,12 @@
 package com.attus.processojudicial.application.service;
 
-import com.attus.processojudicial.api.exception.ErroDeIntegracaoException;
 import com.attus.processojudicial.api.exception.RecursoNaoEncontradoException;
 import com.attus.processojudicial.api.exception.RegraDeNegocioException;
-import com.attus.processojudicial.application.dto.*;
-import com.attus.processojudicial.domain.entity.Movimentacao;
-import com.attus.processojudicial.domain.entity.Parte;
+import com.attus.processojudicial.application.dto.ProcessoRequestDTO;
+import com.attus.processojudicial.application.dto.ProcessoResponseDTO;
 import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.enums.StatusProcesso;
-import com.attus.processojudicial.domain.repository.MovimentacaoRepository;
-import com.attus.processojudicial.domain.repository.ParteRepository;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
-import com.attus.processojudicial.infrastructure.client.ViaCepClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,17 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProcessoService implements ProcessoServiceI {
 
     private final ProcessoRepository processoRepository;
-    private final ParteRepository parteRepository;
-    private final MovimentacaoRepository movimentacaoRepository;
-    private final ViaCepClient viaCepClient;
+    private final ParteServiceI parteService;
+    private final MovimentacaoServiceI movimentacaoService;
 
     @Override
     @Transactional
     public ProcessoResponseDTO criar(ProcessoRequestDTO dto) {
-        log.info("Criando processo com número: {}", dto.getNumero());
-        if (processoRepository.existsByNumero(dto.getNumero())) {
-            throw new RegraDeNegocioException("Já existe um processo com o número: " + dto.getNumero());
-        }
+        log.info("Criando processo número: {}", dto.getNumero());
+        validarNumeroUnico(dto.getNumero());
         Processo processo = Processo.builder()
                 .numero(dto.getNumero())
                 .assunto(dto.getAssunto())
@@ -43,9 +35,9 @@ public class ProcessoService implements ProcessoServiceI {
                 .dataAbertura(dto.getDataAbertura())
                 .status(StatusProcesso.ATIVO)
                 .build();
-        processo = processoRepository.save(processo);
-        log.info("Processo criado com sucesso. ID: {}", processo.getId());
-        return toResponseDTO(processo);
+        Processo salvo = processoRepository.save(processo);
+        log.info("Processo criado. ID: {}", salvo.getId());
+        return toResponseDTO(salvo);
     }
 
     @Override
@@ -60,16 +52,13 @@ public class ProcessoService implements ProcessoServiceI {
     @Override
     @Transactional(readOnly = true)
     public ProcessoResponseDTO buscarPorId(Long id) {
-        Processo processo = processoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
-        return toResponseDTO(processo);
+        return toResponseDTO(buscarOuLancarExcecao(id));
     }
 
     @Override
     @Transactional
     public ProcessoResponseDTO atualizar(Long id, ProcessoRequestDTO dto) {
-        Processo processo = processoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
+        Processo processo = buscarOuLancarExcecao(id);
         processo.setAssunto(dto.getAssunto());
         processo.setVara(dto.getVara());
         processo.setDataAbertura(dto.getDataAbertura());
@@ -80,56 +69,20 @@ public class ProcessoService implements ProcessoServiceI {
     @Transactional
     public ProcessoResponseDTO atualizarStatus(Long id, StatusProcesso status) {
         log.info("Atualizando status do processo {} para {}", id, status);
-        Processo processo = processoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
+        Processo processo = buscarOuLancarExcecao(id);
         processo.setStatus(status);
         return toResponseDTO(processoRepository.save(processo));
     }
 
-    @Override
-    @Transactional
-    public ParteResponseDTO adicionarParte(Long processoId, ParteRequestDTO dto) {
-        Processo processo = processoRepository.findById(processoId)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + processoId));
-
-        Parte parte = Parte.builder()
-                .processo(processo)
-                .tipo(dto.getTipo())
-                .nome(dto.getNome())
-                .documento(dto.getDocumento())
-                .cep(dto.getCep())
-                .build();
-
-        if (dto.getCep() != null && !dto.getCep().isBlank()) {
-            try {
-                log.info("Buscando endereço para CEP: {}", dto.getCep());
-                EnderecoDTO endereco = viaCepClient.buscarEnderecoPorCep(dto.getCep().replaceAll("-", ""));
-                parte.setLogradouro(endereco.getLogradouro());
-                parte.setBairro(endereco.getBairro());
-                parte.setCidade(endereco.getLocalidade());
-                parte.setUf(endereco.getUf());
-                log.info("Endereço encontrado: {} - {}", endereco.getLogradouro(), endereco.getLocalidade());
-            } catch (ErroDeIntegracaoException e) {
-                throw e;
-            } catch (Exception e) {
-                log.warn("Falha ao buscar CEP {} - continuando sem endereço: {}", dto.getCep(), e.getMessage());
-            }
+    private void validarNumeroUnico(String numero) {
+        if (processoRepository.existsByNumero(numero)) {
+            throw new RegraDeNegocioException("Já existe um processo com o número: " + numero);
         }
-
-        return toParteResponseDTO(parteRepository.save(parte));
     }
 
-    @Override
-    @Transactional
-    public MovimentacaoResponseDTO adicionarMovimentacao(Long processoId, MovimentacaoRequestDTO dto) {
-        Processo processo = processoRepository.findById(processoId)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + processoId));
-        Movimentacao mov = Movimentacao.builder()
-                .processo(processo)
-                .descricao(dto.getDescricao())
-                .build();
-        log.info("Adicionando movimentação ao processo {}", processoId);
-        return toMovimentacaoResponseDTO(movimentacaoRepository.save(mov));
+    private Processo buscarOuLancarExcecao(Long id) {
+        return processoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
     }
 
     private ProcessoResponseDTO toResponseDTO(Processo p) {
@@ -142,32 +95,8 @@ public class ProcessoService implements ProcessoServiceI {
         dto.setDataAbertura(p.getDataAbertura());
         dto.setCriadoEm(p.getCriadoEm());
         dto.setAtualizadoEm(p.getAtualizadoEm());
-        dto.setPartes(parteRepository.findByProcessoId(p.getId()).stream()
-                .map(this::toParteResponseDTO).toList());
-        dto.setMovimentacoes(movimentacaoRepository.findByProcessoIdOrderByDataMovimentacaoDesc(p.getId()).stream()
-                .map(this::toMovimentacaoResponseDTO).toList());
-        return dto;
-    }
-
-    private ParteResponseDTO toParteResponseDTO(Parte p) {
-        ParteResponseDTO dto = new ParteResponseDTO();
-        dto.setId(p.getId());
-        dto.setTipo(p.getTipo());
-        dto.setNome(p.getNome());
-        dto.setDocumento(p.getDocumento());
-        dto.setCep(p.getCep());
-        dto.setLogradouro(p.getLogradouro());
-        dto.setBairro(p.getBairro());
-        dto.setCidade(p.getCidade());
-        dto.setUf(p.getUf());
-        return dto;
-    }
-
-    private MovimentacaoResponseDTO toMovimentacaoResponseDTO(Movimentacao m) {
-        MovimentacaoResponseDTO dto = new MovimentacaoResponseDTO();
-        dto.setId(m.getId());
-        dto.setDescricao(m.getDescricao());
-        dto.setDataMovimentacao(m.getDataMovimentacao());
+        dto.setPartes(parteService.listarPorProcesso(p.getId()));
+        dto.setMovimentacoes(movimentacaoService.listarPorProcesso(p.getId()));
         return dto;
     }
 }
