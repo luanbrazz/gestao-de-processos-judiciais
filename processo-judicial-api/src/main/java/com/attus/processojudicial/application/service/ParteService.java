@@ -10,6 +10,7 @@ import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.repository.ParteRepository;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
 import com.attus.processojudicial.infrastructure.client.ViaCepClient;
+import com.attus.processojudicial.infrastructure.client.ViaCepService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class ParteService implements ParteServiceI {
 
     private final ParteRepository parteRepository;
     private final ProcessoRepository processoRepository;
-    private final ViaCepClient viaCepClient;
+    private final ViaCepService viaCepService;
 
     @Override
     @Transactional
@@ -61,17 +62,14 @@ public class ParteService implements ParteServiceI {
     private void preencherEnderecoViaCep(Parte parte, String cep) {
         if (cep == null || cep.isBlank()) return;
         try {
-            log.info("Buscando endereço para CEP: {}", cep);
-            EnderecoDTO endereco = viaCepClient.buscarEnderecoPorCep(cep.replaceAll("-", ""));
+            EnderecoDTO endereco = viaCepService.buscarEndereco(cep);
             parte.setLogradouro(endereco.getLogradouro());
             parte.setBairro(endereco.getBairro());
             parte.setCidade(endereco.getLocalidade());
             parte.setUf(endereco.getUf());
-            log.info("Endereço encontrado: {} - {}", endereco.getLogradouro(), endereco.getLocalidade());
-        } catch (ErroDeIntegracaoException e) {
-            throw e;
+            log.info("Endereço preenchido para CEP: {}", cep);
         } catch (Exception e) {
-            log.warn("Falha ao buscar CEP {} - continuando sem endereço: {}", cep, e.getMessage());
+            log.warn("Não foi possível preencher endereço para CEP {}: {}", cep, e.getMessage());
         }
     }
 

@@ -10,6 +10,7 @@ import com.attus.processojudicial.domain.enums.TipoParte;
 import com.attus.processojudicial.domain.repository.ParteRepository;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
 import com.attus.processojudicial.infrastructure.client.ViaCepClient;
+import com.attus.processojudicial.infrastructure.client.ViaCepService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class ParteServiceTest {
 
     @Mock private ParteRepository parteRepository;
     @Mock private ProcessoRepository processoRepository;
-    @Mock private ViaCepClient viaCepClient;
+    @Mock private ViaCepService viaCepService;
 
     @InjectMocks private ParteService parteService;
 
@@ -74,7 +75,7 @@ class ParteServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getNome()).isEqualTo("João da Silva");
         assertThat(response.getTipo()).isEqualTo(TipoParte.AUTOR);
-        verifyNoInteractions(viaCepClient);
+        verifyNoInteractions(viaCepService);
     }
 
     @Test
@@ -104,7 +105,7 @@ class ParteServiceTest {
                 .build();
 
         when(processoRepository.findById(1L)).thenReturn(Optional.of(processo));
-        when(viaCepClient.buscarEnderecoPorCep(any())).thenThrow(new RuntimeException("CEP inválido"));
+        when(viaCepService.buscarEndereco(any())).thenThrow(new RuntimeException("CEP inválido"));
         when(parteRepository.save(any(Parte.class))).thenReturn(parte);
 
         ParteResponseDTO response = parteService.adicionar(1L, requestDTO);
