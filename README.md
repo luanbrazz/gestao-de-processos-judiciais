@@ -39,7 +39,7 @@ Sistema fullstack para gestão de processos judiciais, desenvolvido como desafio
 
 ### 1. Clonar o repositório
 
-    git clone https://github.com/seu-usuario/gestao-de-processos-judiciais.git
+    git clone https://github.com/{{SEU_USUARIO}}/gestao-de-processos-judiciais.git
     cd gestao-de-processos-judiciais
 
 ### 2. Subir a infraestrutura com Docker
