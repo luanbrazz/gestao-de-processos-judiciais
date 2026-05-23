@@ -10,12 +10,20 @@ public class ProcessoEventConsumer {
 
     @KafkaListener(topics = "processo-criado", groupId = "processo-judicial-group")
     public void consumirProcessoCriado(ProcessoCriadoEvent event) {
-        log.info("   Evento recebido via Kafka - Processo criado:");
-        log.info("   ID: {}", event.getProcessoId());
-        log.info("   Número: {}", event.getNumero());
-        log.info("   Assunto: {}", event.getAssunto());
-        log.info("   Vara: {}", event.getVara());
-        log.info("   Status: {}", event.getStatus());
-        log.info("   Criado em: {}", event.getCriadoEm());
+        try {
+            log.info("✅ EVENTO Kafka [ProcessoCriado] recebido → ID: {} | Número: {} | Assunto: '{}' | Vara: {} | Status: {} | Criado em: {}",
+                    event.getProcessoId(),
+                    event.getNumero(),
+                    event.getAssunto(),
+                    event.getVara(),
+                    event.getStatus(),
+                    event.getCriadoEm());
+
+            log.debug("Detalhes completos do evento: {}", event);
+
+        } catch (Exception e) {
+            log.error("❌ Erro ao processar evento ProcessoCriado do Kafka | ID: {}",
+                    event != null ? event.getProcessoId() : "N/A", e);
+        }
     }
 }
