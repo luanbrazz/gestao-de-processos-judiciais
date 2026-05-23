@@ -19,8 +19,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -28,18 +30,22 @@ import static org.mockito.Mockito.*;
 @DisplayName("MovimentacaoService - Testes Unitários")
 class MovimentacaoServiceTest {
 
-    @Mock private MovimentacaoRepository movimentacaoRepository;
-    @Mock private ProcessoRepository processoRepository;
+    @Mock
+    private MovimentacaoRepository movimentacaoRepository;
+    @Mock
+    private ProcessoRepository processoRepository;
 
-    @InjectMocks private MovimentacaoService movimentacaoService;
+    @InjectMocks
+    private MovimentacaoService movimentacaoService;
 
     private Processo processo;
     private MovimentacaoRequestDTO requestDTO;
+    private final UUID PROCESSO_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     @BeforeEach
     void setUp() {
         processo = Processo.builder()
-                .id(1L)
+                .id(PROCESSO_ID)
                 .numero("0001234-55.2024.8.26.0100")
                 .assunto("Ação de Cobrança")
                 .vara("2ª Vara Cível")
@@ -55,16 +61,16 @@ class MovimentacaoServiceTest {
     @DisplayName("Deve adicionar movimentação com sucesso")
     void deveAdicionarMovimentacaoComSucesso() {
         Movimentacao movimentacao = Movimentacao.builder()
-                .id(1L)
+                .id(UUID.randomUUID())
                 .processo(processo)
                 .descricao("Petição inicial protocolada")
                 .dataMovimentacao(LocalDateTime.now())
                 .build();
 
-        when(processoRepository.findById(1L)).thenReturn(Optional.of(processo));
+        when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
         when(movimentacaoRepository.save(any(Movimentacao.class))).thenReturn(movimentacao);
 
-        MovimentacaoResponseDTO response = movimentacaoService.adicionar(1L, requestDTO);
+        MovimentacaoResponseDTO response = movimentacaoService.adicionar(PROCESSO_ID, requestDTO);
 
         assertThat(response).isNotNull();
         assertThat(response.getDescricao()).isEqualTo("Petição inicial protocolada");
@@ -74,11 +80,13 @@ class MovimentacaoServiceTest {
     @Test
     @DisplayName("Deve lançar exceção quando processo não encontrado ao adicionar movimentação")
     void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
-        when(processoRepository.findById(99L)).thenReturn(Optional.empty());
+        UUID idInexistente = UUID.fromString("550e8400-e29b-41d4-a716-446655449999");
 
-        assertThatThrownBy(() -> movimentacaoService.adicionar(99L, requestDTO))
+        when(processoRepository.findById(idInexistente)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> movimentacaoService.adicionar(idInexistente, requestDTO))
                 .isInstanceOf(RecursoNaoEncontradoException.class)
-                .hasMessageContaining("99");
+                .hasMessageContaining(idInexistente.toString());
 
         verify(movimentacaoRepository, never()).save(any());
     }

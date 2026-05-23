@@ -65,3 +65,8 @@ resilience4j:
       viacep:
         max-attempts: 3
         wait-duration: 500ms
+
+elasticsearch:
+  uris: http://localhost:9200
+  index:
+    name: processo-judicial-logs

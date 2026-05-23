@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/processos/{processoId}/movimentacoes")
@@ -24,14 +25,14 @@ public class MovimentacaoController {
     @PostMapping
     @Operation(summary = "Adicionar movimentação ao processo")
     public ResponseEntity<MovimentacaoResponseDTO> adicionar(
-            @PathVariable Long processoId,
+            @PathVariable UUID processoId,
             @Valid @RequestBody MovimentacaoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(movimentacaoService.adicionar(processoId, dto));
     }
 
     @GetMapping
     @Operation(summary = "Listar movimentações do processo")
-    public ResponseEntity<List<MovimentacaoResponseDTO>> listar(@PathVariable Long processoId) {
+    public ResponseEntity<List<MovimentacaoResponseDTO>> listar(@PathVariable UUID processoId) {
         return ResponseEntity.ok(movimentacaoService.listarPorProcesso(processoId));
     }
 }

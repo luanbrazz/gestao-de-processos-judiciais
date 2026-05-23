@@ -1,6 +1,5 @@
 package com.attus.processojudicial.application.service;
 
-import com.attus.processojudicial.api.exception.ErroDeIntegracaoException;
 import com.attus.processojudicial.api.exception.RecursoNaoEncontradoException;
 import com.attus.processojudicial.application.dto.EnderecoDTO;
 import com.attus.processojudicial.application.dto.ParteRequestDTO;
@@ -9,7 +8,6 @@ import com.attus.processojudicial.domain.entity.Parte;
 import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.repository.ParteRepository;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
-import com.attus.processojudicial.infrastructure.client.ViaCepClient;
 import com.attus.processojudicial.infrastructure.client.ViaCepService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -29,7 +28,7 @@ public class ParteService implements ParteServiceI {
 
     @Override
     @Transactional
-    public ParteResponseDTO adicionar(Long processoId, ParteRequestDTO dto) {
+    public ParteResponseDTO adicionar(UUID processoId, ParteRequestDTO dto) {
         Processo processo = buscarProcessoOuLancarExcecao(processoId);
         Parte parte = montarParte(dto, processo);
         preencherEnderecoViaCep(parte, dto.getCep());
@@ -38,13 +37,13 @@ public class ParteService implements ParteServiceI {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ParteResponseDTO> listarPorProcesso(Long processoId) {
+    public List<ParteResponseDTO> listarPorProcesso(UUID processoId) {
         return parteRepository.findByProcessoId(processoId).stream()
                 .map(this::toResponseDTO)
                 .toList();
     }
 
-    private Processo buscarProcessoOuLancarExcecao(Long processoId) {
+    private Processo buscarProcessoOuLancarExcecao(UUID processoId) {
         return processoRepository.findById(processoId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + processoId));
     }

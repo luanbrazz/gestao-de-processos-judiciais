@@ -6,7 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ProcessoRepository extends JpaRepository<Processo, Long> {
+import java.util.UUID;
+
+public interface ProcessoRepository extends JpaRepository<Processo, UUID> {
     Page<Processo> findByStatus(StatusProcesso status, Pageable pageable);
+
     boolean existsByNumero(String numero);
 }

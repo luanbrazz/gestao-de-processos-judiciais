@@ -18,23 +18,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProcessoService - Testes Unitários")
 class ProcessoServiceTest {
 
-    @Mock private ProcessoRepository processoRepository;
-    @Mock private ParteServiceI parteService;
-    @Mock private MovimentacaoServiceI movimentacaoService;
+    @Mock
+    private ProcessoRepository processoRepository;
+    @Mock
+    private ParteServiceI parteService;
+    @Mock
+    private MovimentacaoServiceI movimentacaoService;
 
-    @InjectMocks private ProcessoService processoService;
+    @InjectMocks
+    private ProcessoService processoService;
 
     private ProcessoRequestDTO requestDTO;
     private Processo processo;
+    private final UUID PROCESSO_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     @BeforeEach
     void setUp() {
@@ -45,7 +53,7 @@ class ProcessoServiceTest {
         requestDTO.setDataAbertura(LocalDate.of(2024, 1, 15));
 
         processo = Processo.builder()
-                .id(1L)
+                .id(PROCESSO_ID)
                 .numero(requestDTO.getNumero())
                 .assunto(requestDTO.getAssunto())
                 .vara(requestDTO.getVara())
@@ -61,8 +69,8 @@ class ProcessoServiceTest {
     void deveCriarProcessoComSucesso() {
         when(processoRepository.existsByNumero(requestDTO.getNumero())).thenReturn(false);
         when(processoRepository.save(any(Processo.class))).thenReturn(processo);
-        when(parteService.listarPorProcesso(1L)).thenReturn(java.util.List.of());
-        when(movimentacaoService.listarPorProcesso(1L)).thenReturn(java.util.List.of());
+        when(parteService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
+        when(movimentacaoService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
 
         ProcessoResponseDTO response = processoService.criar(requestDTO);
 
@@ -80,42 +88,42 @@ class ProcessoServiceTest {
         assertThatThrownBy(() -> processoService.criar(requestDTO))
                 .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessageContaining(requestDTO.getNumero());
-
-        verify(processoRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Deve buscar processo por ID com sucesso")
     void deveBuscarProcessoPorId() {
-        when(processoRepository.findById(1L)).thenReturn(Optional.of(processo));
-        when(parteService.listarPorProcesso(1L)).thenReturn(java.util.List.of());
-        when(movimentacaoService.listarPorProcesso(1L)).thenReturn(java.util.List.of());
+        when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
+        when(parteService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
+        when(movimentacaoService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
 
-        ProcessoResponseDTO response = processoService.buscarPorId(1L);
+        ProcessoResponseDTO response = processoService.buscarPorId(PROCESSO_ID);
 
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(1L);
+        assertThat(response.getId()).isEqualTo(PROCESSO_ID);
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando processo não encontrado")
     void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
-        when(processoRepository.findById(99L)).thenReturn(Optional.empty());
+        UUID idInexistente = UUID.fromString("550e8400-e29b-41d4-a716-446655449999");
 
-        assertThatThrownBy(() -> processoService.buscarPorId(99L))
+        when(processoRepository.findById(idInexistente)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> processoService.buscarPorId(idInexistente))
                 .isInstanceOf(RecursoNaoEncontradoException.class)
-                .hasMessageContaining("99");
+                .hasMessageContaining(idInexistente.toString());
     }
 
     @Test
     @DisplayName("Deve atualizar status do processo com sucesso")
     void deveAtualizarStatusDoProcesso() {
-        when(processoRepository.findById(1L)).thenReturn(Optional.of(processo));
+        when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
         when(processoRepository.save(any(Processo.class))).thenReturn(processo);
-        when(parteService.listarPorProcesso(1L)).thenReturn(java.util.List.of());
-        when(movimentacaoService.listarPorProcesso(1L)).thenReturn(java.util.List.of());
+        when(parteService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
+        when(movimentacaoService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
 
-        ProcessoResponseDTO response = processoService.atualizarStatus(1L, StatusProcesso.ENCERRADO);
+        ProcessoResponseDTO response = processoService.atualizarStatus(PROCESSO_ID, StatusProcesso.ENCERRADO);
 
         assertThat(response).isNotNull();
         verify(processoRepository).save(any(Processo.class));

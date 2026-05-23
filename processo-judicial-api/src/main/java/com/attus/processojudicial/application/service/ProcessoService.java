@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,13 +53,13 @@ public class ProcessoService implements ProcessoServiceI {
 
     @Override
     @Transactional(readOnly = true)
-    public ProcessoResponseDTO buscarPorId(Long id) {
+    public ProcessoResponseDTO buscarPorId(UUID id) {
         return toResponseDTO(buscarOuLancarExcecao(id));
     }
 
     @Override
     @Transactional
-    public ProcessoResponseDTO atualizar(Long id, ProcessoRequestDTO dto) {
+    public ProcessoResponseDTO atualizar(UUID id, ProcessoRequestDTO dto) {
         Processo processo = buscarOuLancarExcecao(id);
         processo.setAssunto(dto.getAssunto());
         processo.setVara(dto.getVara());
@@ -67,7 +69,7 @@ public class ProcessoService implements ProcessoServiceI {
 
     @Override
     @Transactional
-    public ProcessoResponseDTO atualizarStatus(Long id, StatusProcesso status) {
+    public ProcessoResponseDTO atualizarStatus(UUID id, StatusProcesso status) {
         log.info("Atualizando status do processo {} para {}", id, status);
         Processo processo = buscarOuLancarExcecao(id);
         processo.setStatus(status);
@@ -80,7 +82,7 @@ public class ProcessoService implements ProcessoServiceI {
         }
     }
 
-    private Processo buscarOuLancarExcecao(Long id) {
+    private Processo buscarOuLancarExcecao(UUID id) {
         return processoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + id));
     }

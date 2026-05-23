@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -24,7 +25,7 @@ public class MovimentacaoService implements MovimentacaoServiceI {
 
     @Override
     @Transactional
-    public MovimentacaoResponseDTO adicionar(Long processoId, MovimentacaoRequestDTO dto) {
+    public MovimentacaoResponseDTO adicionar(UUID processoId, MovimentacaoRequestDTO dto) {
         Processo processo = buscarProcessoOuLancarExcecao(processoId);
         Movimentacao movimentacao = Movimentacao.builder()
                 .processo(processo)
@@ -36,13 +37,13 @@ public class MovimentacaoService implements MovimentacaoServiceI {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MovimentacaoResponseDTO> listarPorProcesso(Long processoId) {
+    public List<MovimentacaoResponseDTO> listarPorProcesso(UUID processoId) {
         return movimentacaoRepository.findByProcessoIdOrderByDataMovimentacaoDesc(processoId).stream()
                 .map(this::toResponseDTO)
                 .toList();
     }
 
-    private Processo buscarProcessoOuLancarExcecao(Long processoId) {
+    private Processo buscarProcessoOuLancarExcecao(UUID processoId) {
         return processoRepository.findById(processoId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Processo não encontrado: " + processoId));
     }

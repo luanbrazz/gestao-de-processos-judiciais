@@ -4,13 +4,15 @@ import com.attus.processojudicial.domain.enums.TipoParte;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity @Table(name = "parte")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Parte {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "processo_id", nullable = false)
