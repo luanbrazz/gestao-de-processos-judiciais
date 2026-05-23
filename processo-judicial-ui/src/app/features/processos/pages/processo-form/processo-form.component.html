@@ -1,0 +1,75 @@
+<div class="d-flex align-items-center mb-4">
+  <a routerLink="/processos" class="btn btn-outline-secondary me-3">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+  <h2 class="mb-0">
+    <i class="fas fa-file-alt me-2 text-primary"></i>
+    {{ isEdicao ? 'Editar Processo' : 'Novo Processo' }}
+  </h2>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Número do Processo <span class="text-danger">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="numero"
+            placeholder="Ex: 0001234-55.2026.8.26.0100"
+            [class.is-invalid]="campoInvalido('numero')"
+          />
+          <div class="invalid-feedback">Número é obrigatório</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Data de Abertura <span class="text-danger">*</span></label>
+          <input
+            type="date"
+            class="form-control"
+            formControlName="dataAbertura"
+            [class.is-invalid]="campoInvalido('dataAbertura')"
+          />
+          <div class="invalid-feedback">Data de abertura é obrigatória</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-bold">Assunto <span class="text-danger">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="assunto"
+            placeholder="Ex: Execução Fiscal - IPTU"
+            [class.is-invalid]="campoInvalido('assunto')"
+          />
+          <div class="invalid-feedback">Assunto é obrigatório</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-bold">Vara <span class="text-danger">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="vara"
+            placeholder="Ex: 3ª Vara da Fazenda Pública"
+            [class.is-invalid]="campoInvalido('vara')"
+          />
+          <div class="invalid-feedback">Vara é obrigatória</div>
+        </div>
+
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <a routerLink="/processos" class="btn btn-outline-secondary">
+          <i class="fas fa-times me-2"></i>Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-2"></i>{{ isEdicao ? 'Atualizar' : 'Salvar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
