@@ -3,11 +3,17 @@ package com.attus.processojudicial.domain.entity;
 import com.attus.processojudicial.domain.enums.TipoParte;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity @Table(name = "parte")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Entity
+@Table(name = "parte")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Parte {
 
     @Id

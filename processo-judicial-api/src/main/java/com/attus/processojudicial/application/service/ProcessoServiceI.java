@@ -10,8 +10,12 @@ import java.util.UUID;
 
 public interface ProcessoServiceI {
     ProcessoResponseDTO criar(ProcessoRequestDTO dto);
+
     Page<ProcessoResponseDTO> listar(StatusProcesso status, Pageable pageable);
+
     ProcessoResponseDTO buscarPorId(UUID id);
+
     ProcessoResponseDTO atualizar(UUID id, ProcessoRequestDTO dto);
+
     ProcessoResponseDTO atualizarStatus(UUID id, StatusProcesso status);
 }

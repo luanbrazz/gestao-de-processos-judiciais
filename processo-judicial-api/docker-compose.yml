@@ -36,6 +36,17 @@ services:
     depends_on:
       - elasticsearch
 
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.0
+    container_name: processo-judicial-filebeat
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/logs:ro
+    depends_on:
+      - elasticsearch
+    command: filebeat -e -strict.perms=false
+
 volumes:
   postgres_data:
   es_data:
