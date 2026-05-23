@@ -15,6 +15,12 @@ export const routes: Routes = [
         .then(m => m.ProcessoFormComponent)
   },
   {
+    path: 'processos/:id',
+    loadComponent: () =>
+      import('./features/processos/pages/processo-detail/processo-detail.component')
+        .then(m => m.ProcessoDetailComponent)
+  },
+  {
     path: 'processos/:id/editar',
     loadComponent: () =>
       import('./features/processos/pages/processo-form/processo-form.component')

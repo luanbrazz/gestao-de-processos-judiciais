@@ -1,0 +1,166 @@
+<div class="d-flex align-items-center mb-4">
+  <a routerLink="/processos" class="btn btn-outline-secondary me-3">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+  <h2 class="mb-0">
+    <i class="fas fa-file-alt me-2 text-primary"></i>
+    Detalhes do Processo
+  </h2>
+</div>
+
+<div *ngIf="processo">
+
+  <!-- Cabeçalho -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <h4 class="fw-bold">{{ processo.numero }}</h4>
+          <p class="text-muted mb-1">{{ processo.assunto }}</p>
+          <p class="text-muted mb-0"><i class="fas fa-gavel me-1"></i>{{ processo.vara }}</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <span class="badge fs-6 mb-2" [ngClass]="badgeClass(processo.status)">
+            {{ processo.status }}
+          </span>
+          <div class="mt-2">
+            <a [routerLink]="['/processos', processo.id, 'editar']" class="btn btn-outline-primary btn-sm me-2">
+              <i class="fas fa-edit me-1"></i>Editar
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <hr/>
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <small class="text-muted d-block">Data de Abertura</small>
+          <strong>{{ processo.dataAbertura | date:'dd/MM/yyyy' }}</strong>
+        </div>
+        <div class="col-md-3">
+          <small class="text-muted d-block">Criado em</small>
+          <strong>{{ processo.criadoEm | date:'dd/MM/yyyy HH:mm' }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block mb-1">Alterar Status</small>
+          <div class="btn-group">
+            <button
+              *ngFor="let s of statusOptions"
+              class="btn btn-sm"
+              [ngClass]="s === processo.status ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="atualizarStatus(s)">
+              {{ s }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Partes -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="fas fa-users me-2 text-primary"></i>Partes Envolvidas
+        </div>
+        <div class="card-body">
+
+          <!-- Lista de partes -->
+          <div *ngIf="processo.partes.length === 0" class="text-muted text-center py-3">
+            Nenhuma parte cadastrada
+          </div>
+          <div *ngFor="let parte of processo.partes" class="border rounded p-3 mb-2">
+            <div class="d-flex justify-content-between">
+              <span class="badge" [ngClass]="parte.tipo === 'AUTOR' ? 'bg-primary' : 'bg-danger'">
+                {{ parte.tipo }}
+              </span>
+            </div>
+            <p class="fw-bold mb-0 mt-1">{{ parte.nome }}</p>
+            <small class="text-muted">{{ parte.documento }}</small>
+            <div *ngIf="parte.logradouro" class="mt-1">
+              <small class="text-muted">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                {{ parte.logradouro }}, {{ parte.bairro }} - {{ parte.cidade }}/{{ parte.uf }}
+              </small>
+            </div>
+          </div>
+
+          <hr/>
+
+          <!-- Formulário adicionar parte -->
+          <h6 class="fw-bold">Adicionar Parte</h6>
+          <form [formGroup]="parteForm" (ngSubmit)="adicionarParte()">
+            <div class="mb-2">
+              <select class="form-select form-select-sm" formControlName="tipo">
+                <option *ngFor="let t of tipoOptions" [value]="t">{{ t }}</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <input type="text" class="form-control form-control-sm" formControlName="nome"
+                placeholder="Nome completo"
+                [class.is-invalid]="campoInvalido(parteForm, 'nome')"/>
+              <div class="invalid-feedback">Nome é obrigatório</div>
+            </div>
+            <div class="mb-2">
+              <input type="text" class="form-control form-control-sm" formControlName="documento"
+                placeholder="CPF ou CNPJ"
+                [class.is-invalid]="campoInvalido(parteForm, 'documento')"/>
+              <div class="invalid-feedback">Documento é obrigatório</div>
+            </div>
+            <div class="mb-2">
+              <input type="text" class="form-control form-control-sm" formControlName="cep"
+                placeholder="CEP (opcional - busca endereço automaticamente)"/>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+              <i class="fas fa-plus me-1"></i>Adicionar Parte
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Movimentações -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="fas fa-history me-2 text-primary"></i>Movimentações
+        </div>
+        <div class="card-body">
+
+          <!-- Timeline -->
+          <div *ngIf="processo.movimentacoes.length === 0" class="text-muted text-center py-3">
+            Nenhuma movimentação registrada
+          </div>
+          <div *ngFor="let mov of processo.movimentacoes" class="border-start border-primary border-3 ps-3 mb-3">
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>
+              {{ mov.dataMovimentacao | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+            <p class="mb-0 fw-bold">{{ mov.descricao }}</p>
+          </div>
+
+          <hr/>
+
+          <!-- Formulário movimentação -->
+          <h6 class="fw-bold">Nova Movimentação</h6>
+          <form [formGroup]="movimentacaoForm" (ngSubmit)="adicionarMovimentacao()">
+            <div class="mb-2">
+              <textarea class="form-control form-control-sm" formControlName="descricao"
+                rows="3" placeholder="Descreva a movimentação..."
+                [class.is-invalid]="campoInvalido(movimentacaoForm, 'descricao')">
+              </textarea>
+              <div class="invalid-feedback">Descrição é obrigatória</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+              <i class="fas fa-plus me-1"></i>Registrar Movimentação
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
