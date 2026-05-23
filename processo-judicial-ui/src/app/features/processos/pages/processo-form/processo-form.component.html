@@ -15,48 +15,32 @@
 
         <div class="col-md-6">
           <label class="form-label fw-bold">Número do Processo <span class="text-danger">*</span></label>
-          <input
-            type="text"
-            class="form-control"
-            formControlName="numero"
+          <input type="text" class="form-control" formControlName="numero"
             placeholder="Ex: 0001234-55.2026.8.26.0100"
-            [class.is-invalid]="campoInvalido('numero')"
-          />
+            [class.is-invalid]="campoInvalido('numero')"/>
           <div class="invalid-feedback">Número é obrigatório</div>
         </div>
 
         <div class="col-md-6">
           <label class="form-label fw-bold">Data de Abertura <span class="text-danger">*</span></label>
-          <input
-            type="date"
-            class="form-control"
-            formControlName="dataAbertura"
-            [class.is-invalid]="campoInvalido('dataAbertura')"
-          />
+          <input type="date" class="form-control" formControlName="dataAbertura"
+            [class.is-invalid]="campoInvalido('dataAbertura')"/>
           <div class="invalid-feedback">Data de abertura é obrigatória</div>
         </div>
 
         <div class="col-12">
           <label class="form-label fw-bold">Assunto <span class="text-danger">*</span></label>
-          <input
-            type="text"
-            class="form-control"
-            formControlName="assunto"
+          <input type="text" class="form-control" formControlName="assunto"
             placeholder="Ex: Execução Fiscal - IPTU"
-            [class.is-invalid]="campoInvalido('assunto')"
-          />
+            [class.is-invalid]="campoInvalido('assunto')"/>
           <div class="invalid-feedback">Assunto é obrigatório</div>
         </div>
 
         <div class="col-12">
           <label class="form-label fw-bold">Vara <span class="text-danger">*</span></label>
-          <input
-            type="text"
-            class="form-control"
-            formControlName="vara"
+          <input type="text" class="form-control" formControlName="vara"
             placeholder="Ex: 3ª Vara da Fazenda Pública"
-            [class.is-invalid]="campoInvalido('vara')"
-          />
+            [class.is-invalid]="campoInvalido('vara')"/>
           <div class="invalid-feedback">Vara é obrigatória</div>
         </div>
 

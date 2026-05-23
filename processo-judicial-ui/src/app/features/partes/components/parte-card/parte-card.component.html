@@ -1,0 +1,11 @@
+<div class="border rounded p-3 mb-2">
+  <span class="badge" [ngClass]="tipoBadgeClass()">{{ parte.tipo }}</span>
+  <p class="fw-bold mb-0 mt-1">{{ parte.nome }}</p>
+  <small class="text-muted">{{ parte.documento }}</small>
+  <div *ngIf="parte.logradouro" class="mt-1">
+    <small class="text-muted">
+      <i class="fas fa-map-marker-alt me-1"></i>
+      {{ parte.logradouro }}, {{ parte.bairro }} - {{ parte.cidade }}/{{ parte.uf }}
+    </small>
+  </div>
+</div>

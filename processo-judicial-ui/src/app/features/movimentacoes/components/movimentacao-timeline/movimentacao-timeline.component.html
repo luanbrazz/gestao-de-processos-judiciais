@@ -1,0 +1,10 @@
+<div *ngIf="movimentacoes.length === 0" class="text-muted text-center py-3">
+  Nenhuma movimentação registrada
+</div>
+<div *ngFor="let mov of movimentacoes" class="border-start border-primary border-3 ps-3 mb-3">
+  <small class="text-muted">
+    <i class="fas fa-clock me-1"></i>
+    {{ mov.dataMovimentacao | date:'dd/MM/yyyy HH:mm' }}
+  </small>
+  <p class="mb-0 fw-bold">{{ mov.descricao }}</p>
+</div>

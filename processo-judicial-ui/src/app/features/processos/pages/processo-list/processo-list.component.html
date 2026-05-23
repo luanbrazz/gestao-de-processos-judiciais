@@ -5,7 +5,6 @@
   </a>
 </div>
 
-<!-- Filtros -->
 <div class="card mb-4">
   <div class="card-body">
     <div class="row g-3 align-items-end">
@@ -16,11 +15,15 @@
           <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
         </select>
       </div>
+      <div class="col-md-2">
+        <button class="btn btn-outline-secondary w-100" (click)="filtrar()">
+          <i class="fas fa-search me-1"></i>Buscar
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Tabela -->
 <div class="card">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -46,15 +49,13 @@
             <td class="fw-bold">{{ p.numero }}</td>
             <td>{{ p.assunto }}</td>
             <td>{{ p.vara }}</td>
-            <td>
-              <span class="badge" [ngClass]="badgeClass(p.status)">{{ p.status }}</span>
-            </td>
+            <td><app-status-badge [status]="p.status" /></td>
             <td>{{ p.dataAbertura | date:'dd/MM/yyyy' }}</td>
             <td class="text-center">
-              <a [routerLink]="['/processos', p.id]" class="btn btn-sm btn-outline-primary me-1">
+              <a [routerLink]="['/processos', p.id]" class="btn btn-sm btn-outline-primary me-1" title="Visualizar">
                 <i class="fas fa-eye"></i>
               </a>
-              <a [routerLink]="['/processos', p.id, 'editar']" class="btn btn-sm btn-outline-secondary">
+              <a [routerLink]="['/processos', p.id, 'editar']" class="btn btn-sm btn-outline-secondary" title="Editar">
                 <i class="fas fa-edit"></i>
               </a>
             </td>
@@ -64,7 +65,6 @@
     </div>
   </div>
 
-  <!-- Paginação -->
   <div class="card-footer d-flex justify-content-between align-items-center" *ngIf="totalPages > 1">
     <span class="text-muted">Total: {{ totalElements }} processos</span>
     <nav>

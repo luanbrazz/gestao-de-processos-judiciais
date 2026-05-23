@@ -1,0 +1,25 @@
+<h6 class="fw-bold">Adicionar Parte</h6>
+<form [formGroup]="form" (ngSubmit)="submeter()">
+  <div class="mb-2">
+    <select class="form-select form-select-sm" formControlName="tipo">
+      <option *ngFor="let t of tipoOptions" [value]="t">{{ t }}</option>
+    </select>
+  </div>
+  <div class="mb-2">
+    <input type="text" class="form-control form-control-sm" formControlName="nome"
+      placeholder="Nome completo" [class.is-invalid]="invalido('nome')"/>
+    <div class="invalid-feedback">Nome é obrigatório</div>
+  </div>
+  <div class="mb-2">
+    <input type="text" class="form-control form-control-sm" formControlName="documento"
+      placeholder="CPF ou CNPJ" [class.is-invalid]="invalido('documento')"/>
+    <div class="invalid-feedback">Documento é obrigatório</div>
+  </div>
+  <div class="mb-2">
+    <input type="text" class="form-control form-control-sm" formControlName="cep"
+      placeholder="CEP (opcional)"/>
+  </div>
+  <button type="submit" class="btn btn-primary btn-sm w-100">
+    <i class="fas fa-plus me-1"></i>Adicionar Parte
+  </button>
+</form>

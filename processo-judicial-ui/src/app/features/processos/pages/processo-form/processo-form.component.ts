@@ -58,10 +58,8 @@ export class ProcessoFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-
     this.spinner.show();
     const request = this.form.value;
-
     const operacao = this.isEdicao && this.processoId
       ? this.processoService.atualizar(this.processoId, request)
       : this.processoService.criar(request);

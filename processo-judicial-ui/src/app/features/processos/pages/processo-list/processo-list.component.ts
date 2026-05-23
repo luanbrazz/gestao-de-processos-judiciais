@@ -6,11 +6,12 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
 import { ProcessoService } from '../../../../core/services/processo.service';
 import { Processo, StatusProcesso } from '../../../../core/models/processo.model';
+import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-processo-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, StatusBadgeComponent],
   templateUrl: './processo-list.component.html'
 })
 export class ProcessoListComponent implements OnInit {
@@ -64,11 +65,6 @@ export class ProcessoListComponent implements OnInit {
       this.currentPage = page;
       this.carregar();
     }
-  }
-
-  badgeClass(status: StatusProcesso): string {
-    const map = { ATIVO: 'bg-success', SUSPENSO: 'bg-warning text-dark', ENCERRADO: 'bg-danger' };
-    return map[status];
   }
 
   pages(): number[] {
