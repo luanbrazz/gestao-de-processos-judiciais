@@ -1,11 +1,54 @@
 <div class="border rounded p-3 mb-2">
-  <span class="badge" [ngClass]="tipoBadgeClass()">{{ parte.tipo }}</span>
-  <p class="fw-bold mb-0 mt-1">{{ parte.nome }}</p>
-  <small class="text-muted">{{ parte.documento }}</small>
+
+  <!-- Badges de tipo -->
+  <div class="d-flex gap-2 align-items-center mb-1">
+    <span class="badge" [ngClass]="tipoBadgeClass()">{{ parte.tipo }}</span>
+    <span class="badge text-bg-light border">
+      <i class="fas me-1" [ngClass]="parte.tipoPessoa === 'PESSOA_FISICA' ? 'fa-user' : 'fa-building'"></i>
+      {{ parte.tipoPessoa === 'PESSOA_FISICA' ? 'Pessoa Física' : 'Pessoa Jurídica' }}
+    </span>
+    <!-- Situação cadastral (PJ) -->
+    <span *ngIf="parte.situacao" class="badge"
+      [ngClass]="parte.situacao.includes('ATIVA') ? 'bg-success' : 'bg-secondary'">
+      {{ parte.situacao }}
+    </span>
+  </div>
+
+  <!-- Nome / Razão Social -->
+  <p class="fw-bold mb-0">{{ parte.nome }}</p>
+
+  <!-- Documento -->
+  <small class="text-muted">
+    <i class="fas fa-id-card me-1"></i>{{ parte.documento }}
+  </small>
+
+  <!-- Dados exclusivos de PJ -->
+  <ng-container *ngIf="parte.tipoPessoa === 'PESSOA_JURIDICA'">
+    <div *ngIf="parte.razaoSocial && parte.razaoSocial !== parte.nome" class="mt-1">
+      <small class="text-muted"><strong>Razão social:</strong> {{ parte.razaoSocial }}</small>
+    </div>
+    <div *ngIf="parte.naturezaJuridica" class="mt-1">
+      <small class="text-muted"><strong>Natureza jurídica:</strong> {{ parte.naturezaJuridica }}</small>
+    </div>
+    <div *ngIf="parte.cnae" class="mt-1">
+      <small class="text-muted"><strong>CNAE:</strong> {{ parte.cnae }}</small>
+    </div>
+  </ng-container>
+
+  <!-- Data de nascimento (PF) -->
+  <div *ngIf="parte.tipoPessoa === 'PESSOA_FISICA' && parte.dataNascimento" class="mt-1">
+    <small class="text-muted">
+      <i class="fas fa-birthday-cake me-1"></i>{{ parte.dataNascimento | date:'dd/MM/yyyy' }}
+    </small>
+  </div>
+
+  <!-- Endereço -->
   <div *ngIf="parte.logradouro" class="mt-1">
     <small class="text-muted">
       <i class="fas fa-map-marker-alt me-1"></i>
-      {{ parte.logradouro }}, {{ parte.bairro }} - {{ parte.cidade }}/{{ parte.uf }}
+      {{ parte.logradouro }}, {{ parte.bairro }} — {{ parte.cidade }}/{{ parte.uf }}
+      <span *ngIf="parte.cep">(CEP {{ parte.cep }})</span>
     </small>
   </div>
+
 </div>

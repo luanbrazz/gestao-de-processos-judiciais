@@ -1,25 +1,179 @@
 <h6 class="fw-bold">Adicionar Parte</h6>
+
 <form [formGroup]="form" (ngSubmit)="submeter()">
+
+  <!-- Tipo de Parte (AUTOR / REU) -->
   <div class="mb-2">
     <select class="form-select form-select-sm" formControlName="tipo">
       <option *ngFor="let t of tipoOptions" [value]="t">{{ t }}</option>
     </select>
   </div>
+
+  <!-- Documento com máscara automática CPF/CNPJ -->
   <div class="mb-2">
-    <input type="text" class="form-control form-control-sm" formControlName="nome"
-      placeholder="Nome completo" [class.is-invalid]="invalido('nome')"/>
+    <div class="input-group input-group-sm">
+      <span class="input-group-text">
+        <i class="fas" [ngClass]="{
+          'fa-id-card': !tipoPessoa,
+          'fa-user': isPessoaFisica,
+          'fa-building': isPessoaJuridica
+        }"></i>
+      </span>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="documento"
+        placeholder="CPF ou CNPJ"
+        inputmode="numeric"
+        autocomplete="off"
+        (input)="onDocumentoInput($event)"
+        (blur)="onDocumentoBlur()"
+        [class.is-invalid]="invalido('documento')"
+      />
+    </div>
+    <div class="invalid-feedback d-block" *ngIf="invalido('documento')">
+      Documento é obrigatório
+    </div>
+    <!-- Indicador de tipo detectado -->
+    <small *ngIf="tipoPessoa" class="text-muted">
+      <i class="fas me-1" [ngClass]="isPessoaFisica ? 'fa-check-circle text-success' : 'fa-check-circle text-primary'"></i>
+      {{ isPessoaFisica ? 'CPF detectado — Pessoa Física' : 'CNPJ detectado — Pessoa Jurídica' }}
+    </small>
+  </div>
+
+  <!-- Spinner durante busca -->
+  <div *ngIf="buscandoDados" class="alert alert-info py-1 px-2 small mb-2">
+    <span class="spinner-border spinner-border-sm me-1"></span>
+    {{ isPessoaJuridica ? 'Consultando BrasilAPI...' : 'Consultando ViaCEP...' }}
+  </div>
+
+  <!-- Nome -->
+  <div class="mb-2">
+    <input
+      type="text"
+      class="form-control form-control-sm"
+      formControlName="nome"
+      placeholder="Nome completo / Razão social"
+      [class.is-invalid]="invalido('nome')"
+    />
     <div class="invalid-feedback">Nome é obrigatório</div>
   </div>
-  <div class="mb-2">
-    <input type="text" class="form-control form-control-sm" formControlName="documento"
-      placeholder="CPF ou CNPJ" [class.is-invalid]="invalido('documento')"/>
-    <div class="invalid-feedback">Documento é obrigatório</div>
-  </div>
-  <div class="mb-2">
-    <input type="text" class="form-control form-control-sm" formControlName="cep"
-      placeholder="CEP (opcional)"/>
-  </div>
-  <button type="submit" class="btn btn-primary btn-sm w-100">
-    <i class="fas fa-plus me-1"></i>Adicionar Parte
+
+  <!-- ===== Pessoa Física ===== -->
+  <ng-container *ngIf="isPessoaFisica">
+
+    <!-- Data de Nascimento (obrigatória para PF) -->
+    <div class="mb-2">
+      <label class="form-label form-label-sm mb-1">
+        Data de nascimento <span class="text-danger">*</span>
+        <small class="text-muted ms-1">(deve ter 18 anos ou mais)</small>
+      </label>
+      <input
+        type="date"
+        class="form-control form-control-sm"
+        formControlName="dataNascimento"
+        [max]="'9999-12-31'"
+        [class.is-invalid]="invalido('dataNascimento') || menorDeIdade"
+      />
+      <!-- Obrigatório -->
+      <div class="invalid-feedback" *ngIf="invalido('dataNascimento') && !menorDeIdade">
+        Data de nascimento é obrigatória
+      </div>
+      <!-- Menor de idade -->
+      <div class="invalid-feedback d-block" *ngIf="menorDeIdade" style="display:block !important">
+        <i class="fas fa-exclamation-triangle me-1"></i>
+        Menor de idade ({{ idadeCalculada }} ano{{ idadeCalculada === 1 ? '' : 's' }}).
+        Apenas maiores de 18 anos podem ser parte em processos judiciais.
+      </div>
+      <!-- Indicador de idade válida -->
+      <small class="text-success" *ngIf="form.get('dataNascimento')?.value && !menorDeIdade">
+        <i class="fas fa-check me-1"></i>{{ idadeCalculada }} anos — maior de idade
+      </small>
+    </div>
+
+    <!-- CEP -->
+    <div class="mb-2">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          formControlName="cep"
+          placeholder="CEP (opcional)"
+          maxlength="9"
+          inputmode="numeric"
+          (blur)="onCepBlur()"
+        />
+      </div>
+      <small class="text-muted">Preenche endereço automaticamente via ViaCEP</small>
+    </div>
+
+    <!-- Endereço preenchido automaticamente pelo ViaCEP -->
+    <div class="row g-1 mb-2" *ngIf="form.get('logradouro')?.value">
+      <div class="col-8">
+        <input type="text" class="form-control form-control-sm bg-light" formControlName="logradouro" placeholder="Logradouro" readonly />
+      </div>
+      <div class="col-4">
+        <input type="text" class="form-control form-control-sm bg-light" formControlName="uf" placeholder="UF" readonly />
+      </div>
+      <div class="col-6">
+        <input type="text" class="form-control form-control-sm bg-light" formControlName="bairro" placeholder="Bairro" readonly />
+      </div>
+      <div class="col-6">
+        <input type="text" class="form-control form-control-sm bg-light" formControlName="cidade" placeholder="Cidade" readonly />
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ===== Pessoa Jurídica ===== -->
+  <ng-container *ngIf="isPessoaJuridica">
+    <div class="mb-1" *ngIf="form.get('razaoSocial')?.value">
+      <label class="form-label form-label-sm text-muted mb-1">
+        <i class="fas fa-info-circle me-1"></i>Dados da empresa (BrasilAPI)
+      </label>
+
+      <input type="text" class="form-control form-control-sm bg-light mb-1" formControlName="razaoSocial" placeholder="Razão social" readonly />
+      <input type="text" class="form-control form-control-sm bg-light mb-1" formControlName="cnae" placeholder="CNAE" readonly />
+      <input type="text" class="form-control form-control-sm bg-light mb-1" formControlName="naturezaJuridica" placeholder="Natureza jurídica" readonly />
+
+      <span class="badge mb-2"
+        [ngClass]="{
+          'bg-success': form.get('situacao')?.value?.includes('ATIVA'),
+          'bg-danger': !form.get('situacao')?.value?.includes('ATIVA')
+        }">
+        <i class="fas me-1" [ngClass]="form.get('situacao')?.value?.includes('ATIVA') ? 'fa-check-circle' : 'fa-times-circle'"></i>
+        {{ form.get('situacao')?.value || 'Situação desconhecida' }}
+      </span>
+
+      <!-- Endereço da empresa -->
+      <div class="row g-1 mt-1" *ngIf="form.get('logradouro')?.value">
+        <div class="col-8">
+          <input type="text" class="form-control form-control-sm bg-light" formControlName="logradouro" placeholder="Logradouro" readonly />
+        </div>
+        <div class="col-4">
+          <input type="text" class="form-control form-control-sm bg-light" formControlName="uf" placeholder="UF" readonly />
+        </div>
+        <div class="col-6">
+          <input type="text" class="form-control form-control-sm bg-light" formControlName="bairro" placeholder="Bairro" readonly />
+        </div>
+        <div class="col-6">
+          <input type="text" class="form-control form-control-sm bg-light" formControlName="cidade" placeholder="Cidade" readonly />
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Botão submit -->
+  <button
+    type="submit"
+    class="btn btn-sm w-100 mt-2"
+    [ngClass]="menorDeIdade ? 'btn-danger' : 'btn-primary'"
+    [disabled]="buscandoDados || menorDeIdade">
+
+    <span *ngIf="buscandoDados" class="spinner-border spinner-border-sm me-1"></span>
+    <i *ngIf="!buscandoDados && menorDeIdade" class="fas fa-ban me-1"></i>
+    <i *ngIf="!buscandoDados && !menorDeIdade" class="fas fa-plus me-1"></i>
+
+    {{ buscandoDados ? 'Aguarde...' : (menorDeIdade ? 'Menor de idade — não permitido' : 'Adicionar Parte') }}
   </button>
 </form>

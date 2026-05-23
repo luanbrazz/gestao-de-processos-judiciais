@@ -1,20 +1,24 @@
 package com.attus.processojudicial.domain.entity;
 
 import com.attus.processojudicial.domain.enums.TipoParte;
+import com.attus.processojudicial.domain.enums.TipoPessoa;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "parte")
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "tipo_pessoa", discriminatorType = DiscriminatorType.STRING)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Parte {
+@SuperBuilder
+public abstract class Parte {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -31,18 +35,9 @@ public class Parte {
     @Column(nullable = false)
     private String nome;
 
-    @Column(nullable = false, length = 20)
-    private String documento;
-
-    @Column(length = 10)
-    private String cep;
-
-    private String logradouro;
-    private String bairro;
-    private String cidade;
-
-    @Column(length = 2)
-    private String uf;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_pessoa", nullable = false, length = 20, insertable = false, updatable = false)
+    private TipoPessoa tipoPessoa;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;

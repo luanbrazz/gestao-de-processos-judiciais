@@ -1,14 +1,15 @@
 package com.attus.processojudicial.application.service;
 
 import com.attus.processojudicial.api.exception.RecursoNaoEncontradoException;
-import com.attus.processojudicial.application.dto.ParteRequestDTO;
-import com.attus.processojudicial.application.dto.ParteResponseDTO;
-import com.attus.processojudicial.domain.entity.Parte;
+import com.attus.processojudicial.application.dto.*;
+import com.attus.processojudicial.domain.entity.PessoaFisica;
+import com.attus.processojudicial.domain.entity.PessoaJuridica;
 import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.enums.StatusProcesso;
 import com.attus.processojudicial.domain.enums.TipoParte;
 import com.attus.processojudicial.domain.repository.ParteRepository;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
+import com.attus.processojudicial.infrastructure.client.BrasilApiService;
 import com.attus.processojudicial.infrastructure.client.ViaCepService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,11 +34,11 @@ class ParteServiceTest {
     @Mock private ParteRepository parteRepository;
     @Mock private ProcessoRepository processoRepository;
     @Mock private ViaCepService viaCepService;
+    @Mock private BrasilApiService brasilApiService;
 
     @InjectMocks private ParteService parteService;
 
     private Processo processo;
-    private ParteRequestDTO requestDTO;
     private final UUID PROCESSO_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
     @BeforeEach
@@ -50,71 +51,199 @@ class ParteServiceTest {
                 .dataAbertura(LocalDate.of(2024, 1, 15))
                 .status(StatusProcesso.ATIVO)
                 .build();
-
-        requestDTO = new ParteRequestDTO();
-        requestDTO.setTipo(TipoParte.AUTOR);
-        requestDTO.setNome("João da Silva");
-        requestDTO.setDocumento("123.456.789-00");
     }
 
     @Test
-    @DisplayName("Deve adicionar parte sem CEP com sucesso")
-    void deveAdicionarParteSemCep() {
-        Parte parte = Parte.builder()
+    @DisplayName("Deve adicionar PessoaFisica sem CEP com sucesso")
+    void deveAdicionarPessoaFisicaSemCep() {
+        PessoaFisicaRequestDTO dto = new PessoaFisicaRequestDTO();
+        dto.setTipo(TipoParte.AUTOR);
+        dto.setNome("João da Silva");
+        dto.setDocumento("123.456.789-09");
+        dto.setTipoPessoa("PESSOA_FISICA");
+
+        PessoaFisica entidade = PessoaFisica.builder()
                 .id(UUID.randomUUID())
                 .processo(processo)
                 .tipo(TipoParte.AUTOR)
                 .nome("João da Silva")
-                .documento("123.456.789-00")
+                .documento("123.456.789-09")
                 .build();
 
         when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
-        when(parteRepository.save(any(Parte.class))).thenReturn(parte);
+        when(parteRepository.save(any(PessoaFisica.class))).thenReturn(entidade);
 
-        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, requestDTO);
+        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, dto);
 
-        assertThat(response).isNotNull();
+        assertThat(response).isNotNull().isInstanceOf(PessoaFisicaResponseDTO.class);
         assertThat(response.getNome()).isEqualTo("João da Silva");
         assertThat(response.getTipo()).isEqualTo(TipoParte.AUTOR);
         verifyNoInteractions(viaCepService);
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando processo não encontrado ao adicionar parte")
-    void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
-        UUID idInexistente = UUID.fromString("550e8400-e29b-41d4-a716-446655449999");
+    @DisplayName("Deve preencher endereço via ViaCEP ao adicionar PessoaFisica com CEP")
+    void devePreencherEnderecoViaCepParaPessoaFisica() {
+        PessoaFisicaRequestDTO dto = new PessoaFisicaRequestDTO();
+        dto.setTipo(TipoParte.REU);
+        dto.setNome("Maria Oliveira");
+        dto.setDocumento("987.654.321-00");
+        dto.setTipoPessoa("PESSOA_FISICA");
+        dto.setCep("12030-145");
 
-        when(processoRepository.findById(idInexistente)).thenReturn(Optional.empty());
+        EnderecoDTO endereco = new EnderecoDTO();
+        endereco.setCep("12030-145");
+        endereco.setLogradouro("Rua das Flores");
+        endereco.setBairro("Jardim América");
+        endereco.setLocalidade("Taubaté");
+        endereco.setUf("SP");
 
-        assertThatThrownBy(() -> parteService.adicionar(idInexistente, requestDTO))
-                .isInstanceOf(RecursoNaoEncontradoException.class)
-                .hasMessageContaining(idInexistente.toString());
+        PessoaFisica entidade = PessoaFisica.builder()
+                .id(UUID.randomUUID())
+                .processo(processo)
+                .tipo(TipoParte.REU)
+                .nome("Maria Oliveira")
+                .documento("987.654.321-00")
+                .cep("12030-145")
+                .logradouro("Rua das Flores")
+                .bairro("Jardim América")
+                .cidade("Taubaté")
+                .uf("SP")
+                .build();
 
-        verify(parteRepository, never()).save(any());
+        when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
+        when(viaCepService.buscarEndereco("12030-145")).thenReturn(endereco);
+        when(parteRepository.save(any(PessoaFisica.class))).thenReturn(entidade);
+
+        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, dto);
+
+        assertThat(response).isInstanceOf(PessoaFisicaResponseDTO.class);
+        assertThat(response.getCidade()).isEqualTo("Taubaté");
+        verify(viaCepService).buscarEndereco("12030-145");
     }
 
     @Test
-    @DisplayName("Deve continuar sem endereço quando ViaCEP falhar")
+    @DisplayName("Deve continuar sem endereço quando ViaCEP falhar (fallback gracioso)")
     void deveContinuarSemEnderecoQuandoViaCepFalhar() {
-        requestDTO.setCep("99999-999");
+        PessoaFisicaRequestDTO dto = new PessoaFisicaRequestDTO();
+        dto.setTipo(TipoParte.AUTOR);
+        dto.setNome("João da Silva");
+        dto.setDocumento("123.456.789-09");
+        dto.setTipoPessoa("PESSOA_FISICA");
+        dto.setCep("99999-999");
 
-        Parte parte = Parte.builder()
+        PessoaFisica entidade = PessoaFisica.builder()
                 .id(UUID.randomUUID())
                 .processo(processo)
                 .tipo(TipoParte.AUTOR)
                 .nome("João da Silva")
-                .documento("123.456.789-00")
+                .documento("123.456.789-09")
                 .cep("99999-999")
                 .build();
 
         when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
         when(viaCepService.buscarEndereco(any())).thenThrow(new RuntimeException("CEP inválido"));
-        when(parteRepository.save(any(Parte.class))).thenReturn(parte);
+        when(parteRepository.save(any(PessoaFisica.class))).thenReturn(entidade);
 
-        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, requestDTO);
+        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, dto);
 
         assertThat(response).isNotNull();
         assertThat(response.getLogradouro()).isNull();
         verify(parteRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve adicionar PessoaJuridica com dados preenchidos via BrasilAPI")
+    void deveAdicionarPessoaJuridicaComDadosBrasilApi() {
+        PessoaJuridicaRequestDTO dto = new PessoaJuridicaRequestDTO();
+        dto.setTipo(TipoParte.AUTOR);
+        dto.setNome("Empresa XYZ Ltda");
+        dto.setDocumento("12.345.678/0001-90");
+        dto.setTipoPessoa("PESSOA_JURIDICA");
+
+        CnpjDTO cnpjDTO = new CnpjDTO();
+        cnpjDTO.setCnpj("12345678000190");
+        cnpjDTO.setRazaoSocial("Empresa XYZ Ltda");
+        cnpjDTO.setNaturezaJuridica("206-2 - Sociedade Empresária Limitada");
+        cnpjDTO.setDescricaoSituacaoCadastral("ATIVA");
+        cnpjDTO.setLogradouro("Av. Paulista");
+        cnpjDTO.setBairro("Bela Vista");
+        cnpjDTO.setMunicipio("São Paulo");
+        cnpjDTO.setUf("SP");
+        cnpjDTO.setCep("01310-100");
+
+        PessoaJuridica entidade = PessoaJuridica.builder()
+                .id(UUID.randomUUID())
+                .processo(processo)
+                .tipo(TipoParte.AUTOR)
+                .nome("Empresa XYZ Ltda")
+                .documento("12.345.678/0001-90")
+                .razaoSocial("Empresa XYZ Ltda")
+                .naturezaJuridica("206-2 - Sociedade Empresária Limitada")
+                .situacao("ATIVA")
+                .cidade("São Paulo")
+                .uf("SP")
+                .build();
+
+        when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
+        when(brasilApiService.buscarCnpj("12.345.678/0001-90")).thenReturn(cnpjDTO);
+        when(parteRepository.save(any(PessoaJuridica.class))).thenReturn(entidade);
+
+        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, dto);
+
+        assertThat(response).isNotNull().isInstanceOf(PessoaJuridicaResponseDTO.class);
+        PessoaJuridicaResponseDTO pjResponse = (PessoaJuridicaResponseDTO) response;
+        assertThat(pjResponse.getRazaoSocial()).isEqualTo("Empresa XYZ Ltda");
+        assertThat(pjResponse.getSituacao()).isEqualTo("ATIVA");
+        verify(brasilApiService).buscarCnpj("12.345.678/0001-90");
+        verifyNoInteractions(viaCepService);
+    }
+
+    @Test
+    @DisplayName("Deve continuar sem dados da empresa quando BrasilAPI falhar (fallback gracioso)")
+    void deveContinuarSemDadosCnpjQuandoBrasilApiFalhar() {
+        PessoaJuridicaRequestDTO dto = new PessoaJuridicaRequestDTO();
+        dto.setTipo(TipoParte.REU);
+        dto.setNome("Empresa Fantasma Ltda");
+        dto.setDocumento("99.999.999/0001-99");
+        dto.setTipoPessoa("PESSOA_JURIDICA");
+
+        PessoaJuridica entidade = PessoaJuridica.builder()
+                .id(UUID.randomUUID())
+                .processo(processo)
+                .tipo(TipoParte.REU)
+                .nome("Empresa Fantasma Ltda")
+                .documento("99.999.999/0001-99")
+                .build();
+
+        when(processoRepository.findById(PROCESSO_ID)).thenReturn(Optional.of(processo));
+        when(brasilApiService.buscarCnpj(any())).thenThrow(new RuntimeException("CNPJ não encontrado"));
+        when(parteRepository.save(any(PessoaJuridica.class))).thenReturn(entidade);
+
+        ParteResponseDTO response = parteService.adicionar(PROCESSO_ID, dto);
+
+        assertThat(response).isNotNull().isInstanceOf(PessoaJuridicaResponseDTO.class);
+        assertThat(response.getLogradouro()).isNull();
+        verify(parteRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar RecursoNaoEncontradoException quando processo não existir")
+    void deveLancarExcecaoQuandoProcessoNaoEncontrado() {
+        UUID idInexistente = UUID.fromString("550e8400-e29b-41d4-a716-446655449999");
+
+        PessoaFisicaRequestDTO dto = new PessoaFisicaRequestDTO();
+        dto.setTipo(TipoParte.AUTOR);
+        dto.setNome("João da Silva");
+        dto.setDocumento("123.456.789-09");
+        dto.setTipoPessoa("PESSOA_FISICA");
+
+        when(processoRepository.findById(idInexistente)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> parteService.adicionar(idInexistente, dto))
+                .isInstanceOf(RecursoNaoEncontradoException.class)
+                .hasMessageContaining(idInexistente.toString());
+
+        verify(parteRepository, never()).save(any());
     }
 }

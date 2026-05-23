@@ -75,13 +75,19 @@ export class ProcessoDetailComponent implements OnInit {
     });
   }
 
-  onParteAdicionada(request: ParteRequest): void {
-    this.spinner.show();
-    this.parteService.adicionar(this.processo!.id, request).subscribe({
-      next: () => { this.toastr.success('Parte adicionada!'); this.carregar(); },
-      error: () => { this.toastr.error('Erro ao adicionar parte'); this.spinner.hide(); }
-    });
-  }
+onParteAdicionada(request: ParteRequest): void {
+  this.spinner.show();
+  this.parteService.adicionar(this.processo!.id, request).subscribe({
+    next: () => {
+      this.toastr.success('Parte adicionada!');
+      this.carregar();
+    },
+    error: (err: Error) => {
+      this.toastr.error(err.message);
+      this.spinner.hide();
+    }
+  });
+}
 
   onMovimentacaoAdicionada(request: MovimentacaoRequest): void {
     this.spinner.show();

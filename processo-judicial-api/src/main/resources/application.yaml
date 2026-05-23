@@ -25,6 +25,7 @@ spring:
     type: caffeine
     caffeine:
       spec: maximumSize=500,expireAfterWrite=1h
+    cache-names: enderecos,cnpjs
 
   kafka:
     bootstrap-servers: localhost:9092
@@ -71,10 +72,19 @@ resilience4j:
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
         register-health-indicator: true
+      brasilapi:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        register-health-indicator: true
 
   retry:
     instances:
       viacep:
+        max-attempts: 3
+        wait-duration: 500ms
+      brasilapi:
         max-attempts: 3
         wait-duration: 500ms
 
