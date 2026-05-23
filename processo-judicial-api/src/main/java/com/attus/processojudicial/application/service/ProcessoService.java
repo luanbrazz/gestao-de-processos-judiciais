@@ -7,6 +7,8 @@ import com.attus.processojudicial.application.dto.ProcessoResponseDTO;
 import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.enums.StatusProcesso;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
+import com.attus.processojudicial.infrastructure.messaging.ProcessoCriadoEvent;
+import com.attus.processojudicial.infrastructure.messaging.ProcessoEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,7 @@ public class ProcessoService implements ProcessoServiceI {
     private final ProcessoRepository processoRepository;
     private final ParteServiceI parteService;
     private final MovimentacaoServiceI movimentacaoService;
+    private final ProcessoEventProducer eventoProducer;
 
     @Override
     @Transactional
@@ -39,6 +42,7 @@ public class ProcessoService implements ProcessoServiceI {
                 .build();
         Processo salvo = processoRepository.save(processo);
         log.info("Processo criado. ID: {}", salvo.getId());
+        publicarEventoProcessoCriado(salvo);
         return toResponseDTO(salvo);
     }
 
@@ -100,5 +104,16 @@ public class ProcessoService implements ProcessoServiceI {
         dto.setPartes(parteService.listarPorProcesso(p.getId()));
         dto.setMovimentacoes(movimentacaoService.listarPorProcesso(p.getId()));
         return dto;
+    }
+
+    private void publicarEventoProcessoCriado(Processo salvo) {
+        eventoProducer.publicarProcessoCriado(ProcessoCriadoEvent.builder()
+                .processoId(salvo.getId())
+                .numero(salvo.getNumero())
+                .assunto(salvo.getAssunto())
+                .vara(salvo.getVara())
+                .status(salvo.getStatus())
+                .criadoEm(salvo.getCriadoEm())
+                .build());
     }
 }

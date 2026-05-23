@@ -7,6 +7,7 @@ import com.attus.processojudicial.application.dto.ProcessoResponseDTO;
 import com.attus.processojudicial.domain.entity.Processo;
 import com.attus.processojudicial.domain.enums.StatusProcesso;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
+import com.attus.processojudicial.infrastructure.messaging.ProcessoEventProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,8 +24,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProcessoService - Testes Unitários")
@@ -36,6 +36,8 @@ class ProcessoServiceTest {
     private ParteServiceI parteService;
     @Mock
     private MovimentacaoServiceI movimentacaoService;
+    @Mock
+    private ProcessoEventProducer eventoProducer;
 
     @InjectMocks
     private ProcessoService processoService;
@@ -71,7 +73,7 @@ class ProcessoServiceTest {
         when(processoRepository.save(any(Processo.class))).thenReturn(processo);
         when(parteService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
         when(movimentacaoService.listarPorProcesso(PROCESSO_ID)).thenReturn(java.util.List.of());
-
+        doNothing().when(eventoProducer).publicarProcessoCriado(any());
         ProcessoResponseDTO response = processoService.criar(requestDTO);
 
         assertThat(response).isNotNull();
