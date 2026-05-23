@@ -1,0 +1,89 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="fas fa-balance-scale me-2 text-primary"></i>Processos Judiciais</h2>
+  <a routerLink="/processos/novo" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Novo Processo
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-bold">Filtrar por Status</label>
+        <select class="form-select" [(ngModel)]="statusFiltro" (change)="filtrar()">
+          <option value="">Todos</option>
+          <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-outline-secondary w-100" (click)="filtrar()">
+          <i class="fas fa-search me-1"></i>Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Número</th>
+            <th>Assunto</th>
+            <th>Vara</th>
+            <th>Status</th>
+            <th>Data Abertura</th>
+            <th class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="processos.length === 0">
+            <td colspan="6" class="text-center py-4 text-muted">
+              <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+              Nenhum processo encontrado
+            </td>
+          </tr>
+          <tr *ngFor="let p of processos">
+            <td class="fw-bold">{{ p.numero }}</td>
+            <td>{{ p.assunto }}</td>
+            <td>{{ p.vara }}</td>
+            <td>
+              <span class="badge" [ngClass]="badgeClass(p.status)">{{ p.status }}</span>
+            </td>
+            <td>{{ p.dataAbertura | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center">
+              <a [routerLink]="['/processos', p.id]" class="btn btn-sm btn-outline-primary me-1">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a [routerLink]="['/processos', p.id, 'editar']" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-edit"></i>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  <div class="card-footer d-flex justify-content-between align-items-center" *ngIf="totalPages > 1">
+    <span class="text-muted">Total: {{ totalElements }} processos</span>
+    <nav>
+      <ul class="pagination mb-0">
+        <li class="page-item" [class.disabled]="currentPage === 0">
+          <button class="page-link" (click)="irParaPagina(currentPage - 1)">Anterior</button>
+        </li>
+        <li class="page-item" *ngFor="let p of pages()" [class.active]="p === currentPage">
+          <button class="page-link" (click)="irParaPagina(p)">{{ p + 1 }}</button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+          <button class="page-link" (click)="irParaPagina(currentPage + 1)">Próximo</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
