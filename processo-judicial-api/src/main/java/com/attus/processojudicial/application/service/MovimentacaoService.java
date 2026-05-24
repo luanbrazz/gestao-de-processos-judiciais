@@ -1,10 +1,12 @@
 package com.attus.processojudicial.application.service;
 
 import com.attus.processojudicial.api.exception.RecursoNaoEncontradoException;
+import com.attus.processojudicial.api.exception.RegraDeNegocioException;
 import com.attus.processojudicial.application.dto.MovimentacaoRequestDTO;
 import com.attus.processojudicial.application.dto.MovimentacaoResponseDTO;
 import com.attus.processojudicial.domain.entity.Movimentacao;
 import com.attus.processojudicial.domain.entity.Processo;
+import com.attus.processojudicial.domain.enums.StatusProcesso;
 import com.attus.processojudicial.domain.repository.MovimentacaoRepository;
 import com.attus.processojudicial.domain.repository.ProcessoRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,11 @@ public class MovimentacaoService implements MovimentacaoServiceI {
     @Transactional
     public MovimentacaoResponseDTO adicionar(UUID processoId, MovimentacaoRequestDTO dto) {
         Processo processo = buscarProcessoOuLancarExcecao(processoId);
+        if (processo.getStatus() == StatusProcesso.ENCERRADO) {
+            throw new RegraDeNegocioException(
+                    "Não é possível adicionar partes a um processo encerrado."
+            );
+        }
         Movimentacao movimentacao = Movimentacao.builder()
                 .processo(processo)
                 .descricao(dto.getDescricao())

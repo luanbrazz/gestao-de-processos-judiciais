@@ -123,38 +123,59 @@ Para visualizar:
 
 ## Funcionalidades
 
+### Processos
 - Cadastro, visualização e edição de processos judiciais
 - Filtro por status (ATIVO, SUSPENSO, ENCERRADO) com paginação
-- Cadastro de partes (Autor e Réu) com busca automática de endereço por CEP via ViaCEP
-- Registro de movimentações com timeline cronológica
-- Alteração de status do processo
+- Alteração de status via PATCH
+- Eventos Kafka publicados ao criar um processo (`processo-criado`)
+
+### Partes — Pessoa Física e Jurídica
+- Suporte a **Pessoa Física (CPF)** e **Pessoa Jurídica (CNPJ)** via herança JPA (tabelas separadas)
+- **Máscara automática** de CPF (`000.000.000-00`) e CNPJ (`00.000.000/0000-00`) no formulário
+- **Validação de CPF e CNPJ** pelo algoritmo oficial da Receita Federal (módulo 11), tanto no frontend quanto no backend
+- **Regra de maioridade**: Pessoa Física deve ter 18 anos ou mais — validação no frontend (campo bloqueado) e no backend (HTTP 422)
+- **Busca automática de endereço por CEP** (ViaCEP) para Pessoa Física
+- **Busca automática de dados empresariais** por CNPJ (BrasilAPI) para Pessoa Jurídica: razão social, CNAE, natureza jurídica, situação cadastral, endereço
+- Circuit Breaker e Retry para ambas as integrações externas; fallback gracioso em caso de indisponibilidade
+- Cache Caffeine para CEPs e CNPJs já consultados
+
+### Frontend
 - Modo visualização separado do modo edição
-- Eventos Kafka publicados ao criar um processo
-- Circuit Breaker com fallback para indisponibilidade do ViaCEP
-- Cache de CEPs consultados (Caffeine)
-- Logs estruturados em JSON enviados ao Elasticsearch
+- Registro de movimentações com timeline cronológica
+- Toasts com **mensagens de erro reais da API** (não mais mensagens genéricas)
+- Serviços Angular dedicados: `ViaCepService`, `BrasilApiService`, `ProcessoService`, `ParteService`, `MovimentacaoService`
+
+### Observabilidade
+- Logs estruturados em JSON enviados ao Elasticsearch via Filebeat
+- Cache de CEPs e CNPJs consultados (Caffeine)
 
 ---
 
 ## Estrutura do Projeto
 
     gestao-de-processos-judiciais/
-    ├── processo-judicial-api/        # Backend Spring Boot
+    ├── processo-judicial-api/          # Backend Spring Boot
     │   ├── src/main/java/
     │   │   └── com/attus/processojudicial/
-    │   │       ├── api/              # Controllers e Exception Handler
-    │   │       ├── application/      # Services, DTOs e Interfaces
-    │   │       ├── domain/           # Entidades, Enums e Repositories
-    │   │       └── infrastructure/   # Feign, Kafka, Config
+    │   │       ├── api/                # Controllers e GlobalExceptionHandler
+    │   │       ├── application/        # Services, DTOs e Interfaces
+    │   │       │   └── dto/            # ParteRequestDTO (polimórfico), CnpjDTO, EnderecoDTO...
+    │   │       ├── domain/             # Entidades JPA, Enums, Repositories, Validators
+    │   │       │   ├── entity/         # Processo, Parte (abstract), PessoaFisica, PessoaJuridica
+    │   │       │   └── validator/      # DocumentoValidator (CPF/CNPJ algoritmo Receita Federal)
+    │   │       └── infrastructure/     # Feign clients (ViaCepClient, BrasilApiClient), Kafka, Config
     │   ├── src/main/resources/
-    │   │   └── db/migration/         # Migrations Flyway
+    │   │   └── db/migration/           # V1–V7 Flyway migrations
     │   ├── docker-compose.yml
     │   └── filebeat.yml
-    └── processo-judicial-ui/         # Frontend Angular 17
+    └── processo-judicial-ui/           # Frontend Angular 17
         └── src/app/
-            ├── core/                 # Models e Services
-            ├── features/             # Módulos por domínio
-            └── shared/               # Componentes reutilizáveis
+            ├── core/
+            │   ├── models/             # processo.model.ts, api-error.model.ts
+            │   └── services/           # ProcessoService, ParteService, MovimentacaoService,
+            │                           # ViaCepService, BrasilApiService
+            ├── features/               # Módulos por domínio (processos, partes, movimentacoes)
+            └── shared/                 # StatusBadgeComponent e outros reutilizáveis
 
 ---
 

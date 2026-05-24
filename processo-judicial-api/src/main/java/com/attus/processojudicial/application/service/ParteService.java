@@ -3,6 +3,7 @@ package com.attus.processojudicial.application.service;
 import com.attus.processojudicial.api.exception.RecursoNaoEncontradoException;
 import com.attus.processojudicial.api.exception.RegraDeNegocioException;
 import com.attus.processojudicial.application.dto.*;
+import com.attus.processojudicial.domain.enums.StatusProcesso;
 import com.attus.processojudicial.domain.validator.DocumentoValidator;
 import com.attus.processojudicial.domain.entity.Parte;
 import com.attus.processojudicial.domain.entity.PessoaFisica;
@@ -36,6 +37,12 @@ public class ParteService implements ParteServiceI {
     @Transactional
     public ParteResponseDTO adicionar(UUID processoId, ParteRequestDTO dto) {
         Processo processo = buscarProcessoOuLancarExcecao(processoId);
+
+        if (processo.getStatus() == StatusProcesso.ENCERRADO) {
+            throw new RegraDeNegocioException(
+                    "Não é possível adicionar partes a um processo encerrado."
+            );
+        }
 
         if (dto instanceof PessoaFisicaRequestDTO pf) {
             return adicionarPessoaFisica(pf, processo);
